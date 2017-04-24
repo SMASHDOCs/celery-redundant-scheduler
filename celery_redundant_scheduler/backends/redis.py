@@ -6,6 +6,13 @@ from celery.exceptions import ImproperlyConfigured
 
 from .base import BaseBackend
 
+from celery.utils.log import get_logger
+
+logger = get_logger(__name__)
+
+debug, info, error, warning = (logger.debug, logger.info,
+                               logger.error, logger.warning)
+
 try: 
     import cPickle as pickle
 except ImportError:
@@ -30,7 +37,12 @@ class Backend(BaseBackend):
         if Redis is None:
             raise ImproperlyConfigured('`redis `library is not installed')
 
-        return Redis(**self.options)
+        if self.options.get("URL") is not None:
+            info("Using URL" + self.options.get("URL"))
+            return Redis.from_url(self.options.get("URL"))
+        else:
+            info("Using options {}".format(self.options))
+            return Redis(**self.options)
 
     def get_key_with_prefix(self, key):
         if self.key_prefix:
